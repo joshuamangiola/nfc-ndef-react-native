@@ -22,6 +22,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
+import java.util.ArrayList;
+import java.util.List;
 
 import android.nfc.tech.NdefFormatable;
 import android.nfc.tech.Ndef;
@@ -65,7 +67,7 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
     private int tagId;
 
     private ReadableArray sectores;
-	private ReadableArray to_write;
+	private String[] to_write;
 	private int index;
 
     private NfcAdapter mNfcAdapter;
@@ -159,7 +161,7 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
 
                     } else if (writeOperation) {
 
-                        int s = to_write.size();
+                        int s = to_write.length;
                         NdefRecord[] recs = new NdefRecord[s];
                         Log.i("ReactNative", "[+] [NfcNdefReactNative] -> ThreadLectura.run() len: " + Integer.toString(s));
 
@@ -167,7 +169,7 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
                         WritableArray wrote = new WritableNativeArray();
 
                         for (int i = 0; i<s; i++) {
-                            String cur = to_write.getString(i);
+                            String cur = to_write[i];
                             Log.i("ReactNative", "[+] [NfcNdefReactNative] -> ThreadLectura.run() Writing: " + cur);
                             recs[i] = createTextRecord(cur, new Locale("us"), true);
                             wrote.pushString(cur);
@@ -210,7 +212,7 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
                             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                             .emit("onTagError", error);
                     tag = null;
-				} 
+				}
 			}
         }
     }
@@ -254,7 +256,7 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
     }
 
     private void handleIntent(Intent intent) {
-		Tag tagFromIntent = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);  
+		Tag tagFromIntent = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 
 		Log.i("ReactNative", Arrays.toString(tagFromIntent.getTechList()));
 
@@ -263,7 +265,7 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
 		} else {
 			Log.i("ReactNative", "[-] Bad tag.");
 		}
-		
+
 		//this.tag = NfcA.get(tagFromIntent);
 
         //this.tag = MifareClassic.get( (Tag)intent.getParcelableExtra(NfcAdapter.EXTRA_TAG));
@@ -313,7 +315,23 @@ class NfcNdefReactNativeModule extends ReactContextBaseJavaModule implements Act
 
     @ReactMethod
     public void writeTag(ReadableArray to_write) {
-        this.to_write = to_write;
+        List<String> writelist = new ArrayList<String>();
+        for (int i = 0; i < to_write.size(); i++) {
+        writelist.add(to_write.getString(i));
+        }
+        String [] towrite = writelist.toArray(new String[writelist.size()]);
+        this.to_write = towrite;
+        this.writeOperation = true;
+    }
+
+     @ReactMethod
+    public void writeUtf8en(ReadableArray to_write) {
+        List<String> writelist = new ArrayList<String>();
+        for (int i = 0; i < to_write.size(); i++) {
+        writelist.add("\u0002en" + to_write.getString(i));
+        }
+        String [] towrite = writelist.toArray(new String[writelist.size()]);
+        this.to_write = towrite;
         this.writeOperation = true;
     }
 
